@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div id="app">
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <h1>Dashboard</h1>
+            <button class="btn btn-primary" @click="createCampaign">New Campaign</button>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <h3>Active Campaigns</h3>
+                <div class="campaign-list">
+                    <div v-for="campaign in activeCampaigns" :key="campaign.id" class="campaign-card">
+                        <h4>[[ campaign.title ]]</h4>
+                        <p>[[ campaign.description ]]</p>
+                        <div class="campaign-meta">
+                            <span class="date">[[ formatDate(campaign.start_date) ]] - [[ formatDate(campaign.end_date) ]]</span>
+                            <span class="status" :class="campaign.status">[[ campaign.status ]]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Pending Approvals</h3>
+                <div class="approval-list">
+                    <div v-for="approval in pendingApprovals" :key="approval.id" class="approval-card">
+                        <div class="approval-content">
+                            <h4>[[ approval.post.title ]]</h4>
+                            <p>[[ approval.post.content ]]</p>
+                        </div>
+                        <div class="approval-actions">
+                            <button class="btn btn-success" @click="approvePost(approval.id)">Approve</button>
+                            <button class="btn btn-danger" @click="rejectPost(approval.id)">Reject</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Upcoming Posts</h3>
+                <div class="post-list">
+                    <div v-for="post in upcomingPosts" :key="post.id" class="post-card">
+                        <div class="post-preview">
+                            <img v-if="post.media_url" :src="post.media_url" :alt="post.title">
+                            <p>[[ post.content ]]</p>
+                        </div>
+                        <div class="post-meta">
+                            <span class="platform">[[ post.platform ]]</span>
+                            <span class="scheduled-time">[[ formatDateTime(post.scheduled_time) ]]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const { createApp } = Vue
+
+createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            activeCampaigns: [],
+            pendingApprovals: [],
+            upcomingPosts: []
+        }
+    },
+    methods: {
+        async fetchDashboardData() {
+            try {
+                const [campaigns, approvals, posts] = await Promise.all([
+                    axios.get('/api/campaigns/active'),
+                    axios.get('/api/approvals/pending'),
+                    axios.get('/api/posts/upcoming')
+                ])
+                
+                this.activeCampaigns = campaigns.data
+                this.pendingApprovals = approvals.data
+                this.upcomingPosts = posts.data
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error)
+            }
+        },
+        formatDate(date) {
+            return new Date(date).toLocaleDateString()
+        },
+        formatDateTime(datetime) {
+            return new Date(datetime).toLocaleString()
+        },
+        createCampaign() {
+            window.location.href = '/campaign/create'
+        },
+        async approvePost(approvalId) {
+            try {
+                await axios.post(`/api/approvals/${approvalId}/approve`)
+                this.fetchDashboardData()
+            } catch (error) {
+                console.error('Error approving post:', error)
+            }
+        },
+        async rejectPost(approvalId) {
+            try {
+                await axios.post(`/api/approvals/${approvalId}/reject`)
+                this.fetchDashboardData()
+            } catch (error) {
+                console.error('Error rejecting post:', error)
+            }
+        }
+    },
+    mounted() {
+        this.fetchDashboardData()
+    }
+}).mount('#app')
+</script>
+{% endblock %}

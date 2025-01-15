@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div id="app">
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <h1>Content Calendar</h1>
+            <div class="calendar-controls">
+                <select v-model="selectedCampaign">
+                    <option value="">All Campaigns</option>
+                    <option v-for="campaign in campaigns" :value="campaign.id">
+                        [[ campaign.title ]]
+                    </option>
+                </select>
+                <select v-model="platformFilter">
+                    <option value="">All Platforms</option>
+                    <option value="Facebook">Facebook</option>
+                    <option value="Twitter">Twitter</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="LinkedIn">LinkedIn</option>
+                </select>
+                <button class="btn btn-secondary" @click="previousMonth">Previous</button>
+                <h2>[[ currentMonthYear ]]</h2>
+                <button class="btn btn-secondary" @click="nextMonth">Next</button>
+                <button class="btn btn-primary" @click="showCreatePostModal">New Post</button>
+            </div>
+        </div>
+
+        <div class="calendar-view">
+            <div class="calendar-grid">
+                <div class="calendar-weekday" v-for="day in weekDays">[[ day ]]</div>
+                <div v-for="date in calendarDates" 
+                     :key="date.date" 
+                     class="calendar-date" 
+                     :class="{ 'current-month': date.currentMonth, 'has-posts': date.posts.length }"
+                     @dragover.prevent
+                     @drop="handleDrop($event, date)">
+                    <div class="date-header">
+                        <span>[[ date.dayOfMonth ]]</span>
+                        <button v-if="date.currentMonth" 
+                                class="btn-icon" 
+                                @click="quickAddPost(date)">+</button>
+                    </div>
+                    <div class="date-content">
+                        <div v-for="post in filterPostsByPlatform(date.posts)" 
+                             :key="post.id" 
+                             class="calendar-post"
+                             :class="[post.platform.toLowerCase(), post.status]"
+                             draggable="true"
+                             @dragstart="handleDragStart($event, post)"
+                             @click="showPostDetails(post)">
+                            <span class="platform-icon">[[ platformIcon(post.platform) ]]</span>
+                            <span class="post-time">[[ formatTime(post.start) ]]</span>
+                            <span class="post-title">[[ post.title ]]</span>
+                            <div class="post-actions">
+                                <button class="btn-icon" @click.stop="editPost(post)">✏️</button>
+                                <button class="btn-icon" @click.stop="deletePost(post)">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create/Edit Post Modal -->
+        <div v-if="showModal" class="modal">
+            <div class="modal-content">
+                <h3>[[ editingPost ? 'Edit Post' : 'Create New Post' ]]</h3>
+                <form @submit.prevent="submitPost">
+                    <div class="form-group" v-if="!editingPost">
+                        <label>Campaign</label>
+                        <select v-model="newPost.campaign_id" required>
+                            <option v-for="campaign in campaigns" :value="campaign.id">
+                                [[ campaign.title ]]
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Platform</label>
+                        <select v-model="newPost.platform" required>
+                            <option value="Facebook">Facebook</option>
+                            <option value="Twitter">Twitter</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="LinkedIn">LinkedIn</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea v-model="newPost.content" required 
+                                 :maxlength="platformCharacterLimit"
+                                 @input="updateCharacterCount"></textarea>
+                        <div class="character-count">
+                            [[ characterCount ]] / [[ platformCharacterLimit ]] characters
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Schedule Date & Time</label>
+                        <input type="datetime-local" v-model="newPost.scheduled_time" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Media</label>
+                        <input type="file" @change="handleFileUpload" accept="image/*">
+                        <img v-if="newPost.media_preview" :src="newPost.media_preview" class="media-preview">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" @click="closeModal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            [[ editingPost ? 'Save Changes' : 'Create Post' ]]
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Post Details Modal -->
+        <div v-if="showDetailsModal" class="modal">
+            <div class="modal-content">
+                <div class="post-details">
+                    <h3>Post Details</h3>
+                    <div class="platform-badge" :class="selectedPost.platform.toLowerCase()">
+                        [[ platformIcon(selectedPost.platform) ]] [[ selectedPost.platform ]]
+                    </div>
+                    <div class="post-content">
+                        <p>[[ selectedPost.content ]]</p>
+                    </div>
+                    <div class="post-meta">
+                        <p><strong>Scheduled for:</strong> [[ formatDateTime(selectedPost.start) ]]</p>
+                        <p><strong>Status:</strong> [[ selectedPost.status ]]</p>
+                    </div>
+                    <img v-if="selectedPost.media_url" :src="selectedPost.media_url" class="media-preview">
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" @click="closeDetailsModal">Close</button>
+                        <button class="btn btn-primary" @click="editPost(selectedPost)">Edit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div v-if="showDeleteModal" class="modal">
+            <div class="modal-content">
+                <h3>Confirm Delete</h3>
+                <p>Are you sure you want to delete this post? This action cannot be undone.</p>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" @click="showDeleteModal = false">Cancel</button>
+                    <button class="btn btn-danger" @click="confirmDelete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const { createApp } = Vue
+
+createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            currentDate: new Date(),
+            events: [],
+            campaigns: [],
+            selectedCampaign: '',
+            platformFilter: '',
+            showModal: false,
+            showDetailsModal: false,
+            showDeleteModal: false,
+            editingPost: null,
+            selectedPost: null,
+            postToDelete: null,
+            characterCount: 0,
+            newPost: {
+                campaign_id: '',
+                platform: '',
+                content: '',
+                scheduled_time: '',
+                media_url: null,
+                media_preview: null
+            },
+            weekDays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            platformLimits: {
+                'Twitter': 280,
+                'Facebook': 63206,
+                'Instagram': 2200,
+                'LinkedIn': 3000
+            }
+        }
+    },
+    computed: {
+        currentMonthYear() {
+            return this.currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })
+        },
+        platformCharacterLimit() {
+            return this.platformLimits[this.newPost.platform] || 1000
+        },
+        calendarDates() {
+            const year = this.currentDate.getFullYear()
+            const month = this.currentDate.getMonth()
+            const firstDay = new Date(year, month, 1)
+            const lastDay = new Date(year, month + 1, 0)
+            
+            const dates = []
+            
+            // Add days from previous month
+            const firstDayOfWeek = firstDay.getDay()
+            for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+                const date = new Date(year, month, -i)
+                dates.push(this.createDateObject(date, false))
+            }
+            
+            // Add days from current month
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                const date = new Date(year, month, i)
+                dates.push(this.createDateObject(date, true))
+            }
+            
+            // Add days from next month
+            const lastDayOfWeek = lastDay.getDay()
+            for (let i = 1; i < 7 - lastDayOfWeek; i++) {
+                const date = new Date(year, month + 1, i)
+                dates.push(this.createDateObject(date, false))
+            }
+            
+            return dates
+        }
+    },
+    methods: {
+        createDateObject(date, currentMonth) {
+            return {
+                date: date,
+                dayOfMonth: date.getDate(),
+                currentMonth: currentMonth,
+                posts: this.getPostsForDate(date)
+            }
+        },
+        async fetchEvents() {
+            try {
+                const response = await axios.get('/api/calendar/events', {
+                    params: {
+                        start: new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1).toISOString(),
+                        end: new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 0).toISOString(),
+                        campaign_id: this.selectedCampaign
+                    }
+                })
+                this.events = response.data
+            } catch (error) {
+                console.error('Error fetching events:', error)
+            }
+        },
+        async fetchCampaigns() {
+            try {
+                const response = await axios.get('/api/campaigns')
+                this.campaigns = response.data
+            } catch (error) {
+                console.error('Error fetching campaigns:', error)
+            }
+        },
+        getPostsForDate(date) {
+            return this.events.filter(event => {
+                const eventDate = new Date(event.start)
+                return eventDate.getDate() === date.getDate() &&
+                       eventDate.getMonth() === date.getMonth() &&
+                       eventDate.getFullYear() === date.getFullYear()
+            })
+        },
+        filterPostsByPlatform(posts) {
+            if (!this.platformFilter) return posts
+            return posts.filter(post => post.platform === this.platformFilter)
+        },
+        platformIcon(platform) {
+            const icons = {
+                'Facebook': '📘',
+                'Twitter': '🐦',
+                'Instagram': '📷',
+                'LinkedIn': '💼'
+            }
+            return icons[platform] || '📱'
+        },
+        formatTime(datetime) {
+            return new Date(datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        },
+        formatDateTime(datetime) {
+            return new Date(datetime).toLocaleString()
+        },
+        previousMonth() {
+            this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() - 1)
+            this.fetchEvents()
+        },
+        nextMonth() {
+            this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1)
+            this.fetchEvents()
+        },
+        showCreatePostModal() {
+            this.editingPost = null
+            this.newPost = {
+                campaign_id: this.selectedCampaign,
+                platform: '',
+                content: '',
+                scheduled_time: '',
+                media_url: null,
+                media_preview: null
+            }
+            this.characterCount = 0
+            this.showModal = true
+        },
+        updateCharacterCount() {
+            this.characterCount = this.newPost.content.length
+        },
+        handleFileUpload(event) {
+            const file = event.target.files[0]
+            if (file) {
+                const reader = new FileReader()
+                reader.onload = (e) => {
+                    this.newPost.media_preview = e.target.result
+                }
+                reader.readAsDataURL(file)
+            }
+        },
+        async submitPost() {
+            try {
+                const postData = {
+                    ...this.newPost,
+                    scheduled_time: new Date(this.newPost.scheduled_time).toISOString()
+                }
+
+                if (this.editingPost) {
+                    await axios.put(`/api/posts/${this.editingPost.id}`, postData)
+                } else {
+                    await axios.post(`/api/campaigns/${this.newPost.campaign_id}/posts`, postData)
+                }
+                
+                this.closeModal()
+                this.fetchEvents()
+            } catch (error) {
+                console.error('Error saving post:', error)
+            }
+        },
+        editPost(post) {
+            this.editingPost = post
+            this.newPost = {
+                platform: post.platform,
+                content: post.content,
+                scheduled_time: post.start.split('.')[0], // Remove milliseconds
+                media_url: post.media_url,
+                media_preview: post.media_url
+            }
+            this.characterCount = post.content.length
+            this.showDetailsModal = false
+            this.showModal = true
+        },
+        deletePost(post) {
+            this.postToDelete = post
+            this.showDeleteModal = true
+        },
+        async confirmDelete() {
+            try {
+                await axios.delete(`/api/posts/${this.postToDelete.id}`)
+                this.showDeleteModal = false
+                this.postToDelete = null
+                this.fetchEvents()
+            } catch (error) {
+                console.error('Error deleting post:', error)
+            }
+        },
+        showPostDetails(post) {
+            this.selectedPost = post
+            this.showDetailsModal = true
+        },
+        closeDetailsModal() {
+            this.showDetailsModal = false
+            this.selectedPost = null
+        },
+        closeModal() {
+            this.showModal = false
+            this.editingPost = null
+            this.newPost = {
+                campaign_id: '',
+                platform: '',
+                content: '',
+                scheduled_time: '',
+                media_url: null,
+                media_preview: null
+            }
+            this.characterCount = 0
+        },
+        handleDragStart(event, post) {
+            event.dataTransfer.setData('post_id', post.id)
+        },
+        async handleDrop(event, date) {
+            const post_id = event.dataTransfer.getData('post_id')
+            const post = this.events.find(p => p.id === parseInt(post_id))
+            
+            if (!post) return
+            
+            const newDate = new Date(date.date)
+            const oldDate = new Date(post.start)
+            newDate.setHours(oldDate.getHours())
+            newDate.setMinutes(oldDate.getMinutes())
+            
+            try {
+                await axios.put(`/api/posts/${post_id}`, {
+                    scheduled_time: newDate.toISOString()
+                })
+                this.fetchEvents()
+            } catch (error) {
+                console.error('Error updating post date:', error)
+            }
+        },
+        quickAddPost(date) {
+            const now = new Date(date.date)
+            now.setHours(9, 0, 0) // Default to 9 AM
+            
+            this.newPost = {
+                campaign_id: this.selectedCampaign,
+                platform: '',
+                content: '',
+                scheduled_time: now.toISOString().slice(0, 16), // Format for datetime-local input
+                media_url: null,
+                media_preview: null
+            }
+            this.showModal = true
+        }
+    },
+    watch: {
+        selectedCampaign() {
+            this.fetchEvents()
+        }
+    },
+    mounted() {
+        this.fetchEvents()
+        this.fetchCampaigns()
+        
+        // Check for campaign_id in URL params
+        const urlParams = new URLSearchParams(window.location.search)
+        const campaignId = urlParams.get('campaign')
+        if (campaignId) {
+            this.selectedCampaign = campaignId
+        }
+    }
+}).mount('#app')
+</script>
+{% endblock %}

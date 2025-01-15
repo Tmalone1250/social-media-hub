@@ -1,0 +1,458 @@
+:root {
+    --primary-color: #4a90e2;
+    --secondary-color: #50e3c2;
+    --accent-color: #f39c12;
+    --danger-color: #e74c3c;
+    --success-color: #2ecc71;
+    --text-color: #2c3e50;
+    --background-color: #f5f6fa;
+    --card-background: #ffffff;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Navigation */
+.navbar {
+    background-color: var(--card-background);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 1rem 0;
+}
+
+/* Calendar */
+.calendar-view {
+    background: var(--card-background);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+}
+
+/* Campaign Cards */
+.campaign-card {
+    background: var(--card-background);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+    border-left: 4px solid transparent;
+}
+
+.campaign-card.draft {
+    border-left-color: var(--text-color);
+}
+
+.campaign-card.active {
+    border-left-color: var(--primary-color);
+}
+
+.campaign-card.completed {
+    border-left-color: var(--success-color);
+}
+
+.campaign-card.archived {
+    border-left-color: var(--secondary-color);
+}
+
+.campaign-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+
+/* Content Library */
+.content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.content-card {
+    background: var(--card-background);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.content-preview {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Drag and Drop */
+.draggable {
+    cursor: move;
+}
+
+.dropzone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: border-color 0.2s;
+}
+
+.dropzone.dragover {
+    border-color: var(--primary-color);
+    background-color: rgba(74, 144, 226, 0.1);
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 6px;
+    background: var(--card-background);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+/* Campaign Management */
+.campaign-filters {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.campaign-filters select {
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: white;
+}
+
+.campaign-status select {
+    padding: 0.25rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: white;
+    font-size: 0.9rem;
+}
+
+.campaign-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* Confirmation Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Calendar Styles */
+.calendar-container {
+    padding: 2rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.calendar-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.calendar-controls select {
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: white;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
+
+.calendar-weekday {
+    text-align: center;
+    font-weight: 500;
+    padding: 0.5rem;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 4px;
+}
+
+.calendar-date {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    min-height: 120px;
+    padding: 0.5rem;
+    background-color: white;
+}
+
+.calendar-date:not(.current-month) {
+    background-color: #f8f9fa;
+    opacity: 0.7;
+}
+
+.calendar-date.has-posts {
+    border-color: var(--primary-color);
+}
+
+.date-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.date-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.calendar-post {
+    padding: 0.5rem;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.calendar-post:hover {
+    transform: translateY(-2px);
+}
+
+.calendar-post.facebook {
+    background-color: #e7f3ff;
+    border-left: 3px solid #1877f2;
+}
+
+.calendar-post.twitter {
+    background-color: #e8f5fd;
+    border-left: 3px solid #1da1f2;
+}
+
+.calendar-post.instagram {
+    background-color: #fce7f3;
+    border-left: 3px solid #e1306c;
+}
+
+.calendar-post.linkedin {
+    background-color: #e8f4f9;
+    border-left: 3px solid #0077b5;
+}
+
+.calendar-post.draft {
+    opacity: 0.7;
+}
+
+.calendar-post.scheduled {
+    border-style: dashed;
+}
+
+.calendar-post.published {
+    background-color: #d1fae5;
+}
+
+.platform-icon {
+    font-size: 1.2rem;
+}
+
+.post-time {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.post-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.post-actions {
+    display: none;
+    gap: 0.25rem;
+}
+
+.calendar-post:hover .post-actions {
+    display: flex;
+}
+
+.btn-icon {
+    padding: 0.25rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.btn-icon:hover {
+    opacity: 1;
+}
+
+.platform-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.platform-badge.facebook {
+    background-color: #e7f3ff;
+    color: #1877f2;
+}
+
+.platform-badge.twitter {
+    background-color: #e8f5fd;
+    color: #1da1f2;
+}
+
+.platform-badge.instagram {
+    background-color: #fce7f3;
+    color: #e1306c;
+}
+
+.platform-badge.linkedin {
+    background-color: #e8f4f9;
+    color: #0077b5;
+}
+
+.media-preview {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+.character-count {
+    font-size: 0.8rem;
+    color: #666;
+    text-align: right;
+    margin-top: 0.25rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .content-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+    
+    .calendar-grid {
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
